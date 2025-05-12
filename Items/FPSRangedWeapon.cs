@@ -201,23 +201,11 @@ namespace Items {
         }
     }
     
-    public class ItemScriptableObject : ScriptableObject {
-        public string itemName;
-        public Item itemType;
-    }
     
-    public class Weapon : ItemScriptableObject { 
-        public float damage;
-        public float range;
-        public float firerate;
-        public float recoilRate;
-        public bool firemodes;
-        public string ammoCalibre;
-    }
     
-    public class ItemComponet : MonoBehaviour {
-        ItemScriptableObject item;
-    }
+    
+    
+
     
     
 }

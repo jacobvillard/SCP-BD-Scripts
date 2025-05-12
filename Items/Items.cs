@@ -31,4 +31,20 @@ namespace Items {
         Flare
     }
     
+    /// <summary>
+    /// An enumeration of all the item slots in the game.
+    /// </summary>
+    public enum SlotType{
+        None,
+        Primary,
+        Secondary,
+        Melee,
+        Helmet,
+        goggles,
+        armor,
+        backpack,
+        pouch,
+        rig,
+    }
+    
 }
