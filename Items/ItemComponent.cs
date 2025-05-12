@@ -6,7 +6,7 @@ using UnityEngine;
 /// </summary>
 public class ItemComponent : MonoBehaviour {
     [SerializeField]private SlotType slotType;
-    [SerializeField]private int slotWidth;
-    [SerializeField]private int slotHeight;
-    [SerializeField]private ItemScriptableObject item;
+    [SerializeField] public int slotWidth;
+    [SerializeField] public int slotHeight;
+    [SerializeField] private ItemScriptableObject item;
 }
