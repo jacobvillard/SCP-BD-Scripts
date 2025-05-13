@@ -23,12 +23,12 @@ namespace Inventory {
         // Temporary variables for the item spawning todo remove
         [Header("Item Spawning")]
         [SerializeField] private GameObject itemPrefab;                    
-        [SerializeField] private Vector2 spawn = new Vector2(0, 0); // The spawn position for the item prefab            
+        [SerializeField] private Vector2Int spawn = new Vector2Int(0, 0); // The spawn position for the item prefab            
         
          private SlotComponent[,] spawnedSlots;                     // The spawned slots in the inventory
          private const float SlotVerticalSpacing = 130f;            
          private const float LayoutPadding = 400f;
-         private const float CellPadding = 64f;
+         private const float CellPadding = 0f;
          
         private void Awake() {
 #if UNITY_EDITOR
@@ -86,13 +86,13 @@ namespace Inventory {
             var visibleRows = Mathf.CeilToInt((float)slotNumber / slotsPerRow);
             
             //Build the 2D array of slots
-            spawnedSlots = new SlotComponent[visibleRows, slotsPerRow];
+            spawnedSlots = new SlotComponent[slotsPerRow, visibleRows];
             for (var index = 0; index < slotNumber; index++) {
                 var row = index / slotsPerRow;
                 var col = index % slotsPerRow;
 
                 var slotComp = transform.GetChild(index).GetComponent<SlotComponent>();
-                spawnedSlots[row, col] = slotComp;
+                spawnedSlots[col, row] = slotComp;
             }
 
             return visibleRows;
@@ -150,14 +150,27 @@ namespace Inventory {
         /// </summary>
         [Button]
         private void SpawnItem() {
+
+            // Get the item component
+            var itemComponent = itemPrefab.GetComponent<ItemComponent>();
+            
+            // Check if the item can be placed in the slot
+            if (!IsPlacementValid(spawn.y, spawn.x, itemComponent.slotWidth, itemComponent.slotHeight)) {
+                return;
+            }
+            
             // Item instantiation
             var item = Instantiate(itemPrefab, parentRectTransform, true);
             
+            // Determine offset based on item size
+            var offsetX = itemComponent.slotWidth > 1 ? -((itemComponent.slotWidth - 1) * 128 / 2f) : 0f;
+            var offsetY = itemComponent.slotHeight > 1 ? -((itemComponent.slotHeight - 1) * 128 / 2f) : 0f;
+            
             // Calculate the spawn position based on the slot position
-            var slotPos = spawnedSlots[(int)spawn.x, (int)spawn.y].transform.position;
+            var slotPos = spawnedSlots[spawn.y, spawn.x].transform.position;
             var itemSpawnPos = new Vector3(
-                slotPos.x - CellPadding,
-                slotPos.y + CellPadding,
+                slotPos.x - offsetX,
+                slotPos.y + offsetY,
                 slotPos.z
             );
             
@@ -165,21 +178,72 @@ namespace Inventory {
             item.transform.position = itemSpawnPos;
             
             // Set the source slot position
-            spawnedSlots[(int)spawn.x, (int)spawn.y].sourceSlot = true;
+            spawnedSlots[spawn.y, spawn.x].sourceSlot = true;
+            spawnedSlots[spawn.y, spawn.x].itemPrefabRef = item;
             
-            //todo: check if placement is valid
-            
-            // Get the item component
-            var itemComponent = item.GetComponent<ItemComponent>();
-            
-            // Spawn an item in the first empty slot
+            // Spawn an item in the first empty slots
             for (var i = 0; i < itemComponent.slotWidth; i++) {
                 for (var j = 0; j < itemComponent.slotHeight; j++) {
                     if (spawnedSlots[i, j].itemComponent == null) {
                         spawnedSlots[i, j].AddItem(itemComponent);
+                        spawnedSlots[i, j].sourceSlotPosition = new Vector2Int(spawn.y, spawn.x);
                     }
                 }
             }
+        }
+        
+        /// <summary>
+        /// Checks if the placement of an item is valid in the inventory.
+        /// </summary>
+        /// <param name="startX"></param>
+        /// <param name="startY"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <returns></returns>
+        private bool IsPlacementValid(int startX, int startY, int width, int height) {
+            Debug.Log($"Checking placement for item at ({startX}, {startY}) with size ({width}, {height})");
+            Debug.Log($"Grid size: {spawnedSlots.GetLength(0)} x {spawnedSlots.GetLength(1)}");
+            
+            // Check bounds
+            if (startX + width > spawnedSlots.GetLength(0) || startY + height > spawnedSlots.GetLength(1))
+                return false;
+
+            // Check for empty slots
+            for (var x = 0; x < width; x++)
+            {
+                for (var y = 0; y < height; y++)
+                {
+                    if (spawnedSlots[startX + x, startY + y].itemComponent != null)
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Removes an item from the inventory.
+        /// </summary>
+        public void RemoveItem(Vector2Int slotPosition) {
+            // Check if the slot is empty
+            if (spawnedSlots[slotPosition.x, slotPosition.y].itemComponent == null) {
+                Debug.Log("Slot is empty");
+                return;
+            }
+            
+            // Remove the item from the slot
+            var itemComponent = spawnedSlots[slotPosition.x, slotPosition.y].itemComponent;
+            Destroy(spawnedSlots[slotPosition.x, slotPosition.y].itemPrefabRef);
+            
+            for (var i = 0; i < itemComponent.slotWidth; i++) {
+                for (var j = 0; j < itemComponent.slotHeight; j++) {
+                    if (spawnedSlots[i, j].itemComponent != null) {
+                        spawnedSlots[i, j].sourceSlot = false;
+                        spawnedSlots[i, j].itemComponent = null;
+                    }
+                }
+            }
+            
         }
    
         // Update the slots when the script is enabled or disabled

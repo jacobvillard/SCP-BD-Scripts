@@ -26,7 +26,15 @@ namespace Inventory {
         /// </summary>
         public bool sourceSlot;
         
+        public GameObject itemPrefabRef; 
         
+        [SerializeField] private DynamicSlotManager dynamicSlotManager; // The dynamic slot manager that manages the slots
+        
+        private void Awake() {
+            if (dynamicSlotManager == null) {
+                dynamicSlotManager = transform.parent.GetComponent<DynamicSlotManager>();
+            }
+        }
         
         /// <summary>
         /// Add an item to the slot.
@@ -48,9 +56,10 @@ namespace Inventory {
         /// <summary>
         /// Remove the item from the slot.
         /// </summary>
+        [Button]
         public void RemoveItem() {
-            itemComponent = null;
-            sourceSlot = false;
+            if (itemComponent == null) return;
+            dynamicSlotManager.RemoveItem(sourceSlotPosition);
         }
     }
 }
